@@ -6,13 +6,13 @@ class Client {
 	public $configuration;
 	public $api_key = 'invalid';
 	public $adult = false;
-	public $language = 'en';
+	public $language = 'en-US';
 	public $paged = true;
 	public $error;
 	public $response; // last response result;
 	public $debug = false;
 	/**
-	 * SINGLETON (with enheritance support)
+	 * SINGLETON (with inheritance support)
 	 */
 	protected static $instance;
 	final public static function getInstance($api_key = null) {
@@ -44,7 +44,9 @@ class Client {
 			$asset_class = "\\TMDB\\structures\\".ucfirst($type); // NOTE: As long as we can map the methods to the class name, this works...
 			$results = array();
 			foreach ($response->data->results as $asset) {
-				if(!is_object($asset)) continue; // TMDB API occasionally includes null in the result array.
+				if(!is_object($asset)) {
+					continue; // TMDB API occasionally includes null in the result array.
+				}
 				if ($expand) {
 					$info = $this->info($type, $asset->id);
 					if ($info) {
@@ -92,7 +94,7 @@ class Client {
 	/**
 	 * Sending requests to TMDB
 	 *
-	 * @returns a response array object containing:
+	 * @returns \stdClass response containing:
 	 *  - headers -> response http headers
 	 *  - data -> json decoded data
 	 *  - error -> error code and message
@@ -100,8 +102,14 @@ class Client {
 	private function send_request($method, $params = array() , $data = array()) {
 		$response = new \stdClass();
 		$params = $this->params_merge($params);
+
+		if ($method!='configuration' && $this->paged) {
+			$params['page'] = 1;
+		}
+
 		$query = http_build_query($params);
 		$url = $this->api_url . '/' . $this->api_version . '/' . $method . '?' . $query;
+
 		// Initializing curl
 		$ch = curl_init();
 		if ($ch) {
@@ -180,7 +188,8 @@ class Client {
 		} else if (in_array($width, $this->configuration->images->$type)) {
 			$preset = $width;
 		}
-		return $this->configuration->images->base_url . $preset . $file_path;;
+		//return $this->configuration->images->base_url . $preset . $file_path;
+		return $this->configuration->images->secure_base_url . $preset . $file_path;
 	}
 	public function params_merge($params) {
 		$defaults = $defaults = array(
